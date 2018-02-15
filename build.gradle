@@ -1,0 +1,248 @@
+import groovy.swing.SwingBuilder
+
+plugins
+{
+    id "java"
+    id "com.github.hierynomus.license" version "0.14.0"
+}
+
+repositories
+{
+    jcenter()
+}
+
+dependencies
+{
+    compile "org.slf4j:slf4j-api:1.7.25"
+    compile "ch.qos.logback:logback-classic:1.2.3"
+    compile "commons-io:commons-io:2.6"
+    compile "net.sf.trove4j:trove4j:3.0.3"
+    compile "net.dv8tion:JDA:3.5.0_327"
+    testCompile "org.mockito:mockito-core:2.10.0"
+    testCompile "junit:junit:4.12"
+}
+
+sourceSets
+{
+    main
+    {
+        java
+        {
+            srcDirs "src.java"
+        }
+
+        resources
+        {
+            srcDirs "res"
+        }
+    }
+
+    config
+    {
+        resources
+        {
+            srcDirs "config"
+        }
+    }
+
+    test
+    {
+        java
+        {
+            srcDirs "test.java"
+        }
+
+        resources
+        {
+            srcDirs "config.test"
+        }
+    }
+}
+
+ext
+{
+    binaryName=project.name.replace("bot", "")
+    installationDir=new File(buildDir, "installation")
+    binDir=new File(installationDir, "bin")
+    configDir=new File(installationDir, "config")
+    libDir=new File(installationDir, "lib")
+    distributablesDir=new File(buildDir, "distributables")
+    licensePath=new File(projectDir, "LICENSE.txt")
+    dependencyLicenseReportPath=new File(buildDir, "reports/license/dependency-license.html")
+}
+
+task makeDistributable (type: Zip)
+task makeInstallation
+task signJar
+task requestSignature
+task setManifestClasspath
+task installDependencies (type: Copy)
+task installConfigurationFiles (type: Copy)
+task installLicense (type: Copy)
+task installDependencyLicenses (type: Copy)
+
+licenseConfig.enabled=false
+licenseMain.enabled=false
+licenseTest.enabled=false
+
+build
+{
+    dependsOn makeDistributable
+}
+
+makeDistributable
+{
+    dependsOn signJar
+    dependsOn makeInstallation
+    from installationDir
+    destinationDir distributablesDir
+    baseName binaryName
+}
+
+makeInstallation
+{
+    dependsOn jar
+    dependsOn installDependencies
+    dependsOn installConfigurationFiles
+    dependsOn installLicense
+    dependsOn installDependencyLicenses
+}
+
+signJar
+{
+    dependsOn jar
+    dependsOn requestSignature
+
+    ext
+    {
+        // these properties need to exist for the requestSignature task to work properly; values will be overwritten
+        keystore=""
+        storepass=""
+        alias=""
+        keypass=""
+    }
+
+    doLast
+    {
+        ant.signjar(jar: jar.archivePath, keystore: keystore, storepass: storepass, alias: alias, keypass: keypass)
+    }
+}
+
+jar
+{
+    dependsOn setManifestClasspath
+    destinationDir binDir
+    baseName binaryName
+
+    manifest
+    {
+        attributes "Date-Built": new Date().format("MMMM d, yyyy")
+        attributes "Main-Class": "codes.soloware.derpybot.Derpy"
+        attributes "Version": "git describe --tags --always HEAD".execute().text.trim()
+    }
+}
+
+requestSignature
+{
+    gradle.taskGraph.whenReady
+    {
+        taskGraph -> if (taskGraph.hasTask(":requestSignature"))
+        {
+            new SwingBuilder().edt
+            {
+                dialog(modal: true, title: "Enter Jar Signature", alwaysOnTop: true, resizable: true, locationRelativeTo: null, pack: true, show: true)
+                {
+                    vbox
+                    {
+                        label("Path to keystore file: ")
+                        textField id: "keystore"
+                        label("Keystore password: ")
+                        textField id: "storepass", input=passwordField()
+                        label("Alias of the key to sign with:")
+                        textField id: "alias"
+                        label("Key password:")
+                        textField id: "keypass", input=passwordField()
+
+                        button(defaultButton: true, text: "OK", actionPerformed:
+                        {
+                            signJar.keystore=keystore.text
+                            signJar.storepass=storepass.text
+                            signJar.alias=alias.text
+                            signJar.keypass=keypass.text
+                            dispose()
+                        })
+                    }
+                }
+            }
+        }
+    }
+}
+
+setManifestClasspath
+{
+    dependsOn installDependencies
+    dependsOn installConfigurationFiles
+
+    doLast
+    {
+        if (!jar.destinationDir.exists())
+            jar.destinationDir.mkdir()
+
+        ant.manifestclasspath(property: "manifestclasspath", jarfile: jar.archivePath)
+        {
+            classpath
+            {
+                fileset(dir: libDir, includes: "*.jar")
+                pathelement(path: configDir)
+            }
+        }
+
+        jar.manifest.attributes "Class-Path": ant.manifestclasspath
+    }
+}
+
+installDependencies
+{
+    into libDir
+
+    configurations.compile.collect
+    {
+        from it
+    }
+}
+
+installConfigurationFiles
+{
+    from sourceSets.config.resources.srcDirs
+    into configDir
+}
+
+installLicense
+{
+    from licensePath
+    into installationDir
+}
+
+installDependencyLicenses
+{
+    from dependencyLicenseReportPath
+    into libDir
+
+    rename
+    {
+        "licenses.html"
+    }
+
+    project.afterEvaluate
+    {
+        dependsOn project.tasks.getByName("downloadLicenses")
+    }
+}
+
+downloadLicenses
+{
+    reportByDependency true
+    includeProjectDependencies true
+    dependencyConfiguration "compile"
+    licenses "net.dv8tion:JDA:3.5.0_327": license("Apache License, Version 2.0", "https://www.apache.org/licenses/LICENSE-2.0.txt")
+}
