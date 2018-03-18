@@ -16,6 +16,8 @@
  */
 package codes.soloware.derpybot;
 
+import java.util.Random;
+
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.EventListener;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
@@ -25,6 +27,8 @@ import net.dv8tion.jda.core.hooks.ListenerAdapter;
  */
 public class ChatResponder extends ListenerAdapter
 {
+    private static final float randomResponseChance=0.01f;
+    private final Random randomNumbers;
     private final String responseTrigger;
     private final TextGenerator responseGenerator;
 
@@ -34,6 +38,8 @@ public class ChatResponder extends ListenerAdapter
             throw new NullPointerException("Given response trigger keyword is null.");
         if (responseGenerator==null)
             throw new NullPointerException("Given response generator implementation is null.");
+        this.randomNumbers=new Random();
+        this.randomNumbers.setSeed(System.currentTimeMillis());
         this.responseTrigger=responseTrigger;
         this.responseGenerator=responseGenerator;
     }
@@ -43,8 +49,11 @@ public class ChatResponder extends ListenerAdapter
     {
         if (event.getAuthor().equals(event.getJDA().getSelfUser()))
             return;
-        if (event.getChannel().canTalk()&&event.getMessage().getContentDisplay().contains(responseTrigger))
+        if (event.getChannel().canTalk()&&(event.getMessage().getContentDisplay().contains(responseTrigger)||
+                (randomNumbers.nextFloat()<=randomResponseChance)))
+        {
             event.getChannel().sendMessage(responseGenerator.respond(event.getMessage().getContentDisplay())).complete();
+        }
         else responseGenerator.listen(event.getMessage().getContentDisplay());
     }
 }
