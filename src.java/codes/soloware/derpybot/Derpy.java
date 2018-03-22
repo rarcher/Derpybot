@@ -42,6 +42,7 @@ public class Derpy
         final JDABuilder builder=new JDABuilder(AccountType.BOT);
         builder.addEventListener(new ChatResponder("Derpy", new MarkovChain()));
         builder.addEventListener(new NewMemberGreeter());
+        builder.addEventListener(new LeavingMemberFarewellGenerator());
 
         final URL tokenFile=Derpy.class.getClassLoader().getResource(tokenFileName);
         if (tokenFile==null)
