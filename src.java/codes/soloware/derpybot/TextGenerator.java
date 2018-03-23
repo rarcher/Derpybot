@@ -27,11 +27,21 @@ public interface TextGenerator
      */
     public void listen(String text);
     /**
+     * Formulate and return a text string, using the generator's current response library.
+     *
+     * @return          generated text string
+     */
+    public String generate();
+    /**
      * Formulate and return a response to the given text. This may or may not update the engine's response library,
      * depending on implementation.
      *
      * @param text      text to respond to
      * @return          an appropriate response
      */
-    public String respond(String text);
+    public default String respond(final String text)
+    {
+        listen(text);
+        return generate();
+    }
 }

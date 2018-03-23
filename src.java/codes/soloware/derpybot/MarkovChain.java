@@ -54,6 +54,9 @@ public class MarkovChain implements TextGenerator
         this.randomNumbers.setSeed(System.currentTimeMillis());
         this.sentenceStarters=new LinkedHashSet<String>();
         this.wordPairOccurrenceTallies=new LinkedHashMap<String, TObjectIntHashMap<String>>();
+
+        // pre-populate with some default training data, so we don't have to deal with the edge case of being empty
+        listen("Hi!");
     }
 
     @Override
@@ -76,10 +79,8 @@ public class MarkovChain implements TextGenerator
     }
 
     @Override
-    public String respond(final String text)
+    public String generate()
     {
-        listen(text);
-
         final StringBuilder response=new StringBuilder();
         String currentWord=startSentence();
         while (true)
