@@ -40,7 +40,7 @@ public class Derpy
     public static void main(final String[] args)
     {
         final JDABuilder builder=new JDABuilder(AccountType.BOT);
-        builder.addEventListener(new ChatResponder("Derpy", new EmoteIgnoringTextGenerator(new MarkovChain())));
+        builder.addEventListener(new ChatResponder("Derpy", new LinkIgnoringTextGenerator(new EmoteIgnoringTextGenerator(new MarkovChain()))));
         builder.addEventListener(new NewMemberGreeter());
         builder.addEventListener(new LeavingMemberFarewellGenerator());
 
