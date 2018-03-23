@@ -60,7 +60,7 @@ public class MarkovChain implements TextGenerator
     }
 
     @Override
-    public final void listen(final String text)
+    public synchronized final void listen(final String text)
     {
         final String[] splitText=splitter.split(text);
         sentenceStarters.add(splitText[0]);
@@ -79,7 +79,7 @@ public class MarkovChain implements TextGenerator
     }
 
     @Override
-    public String generate()
+    public synchronized String generate()
     {
         final StringBuilder response=new StringBuilder();
         String currentWord=startSentence();
