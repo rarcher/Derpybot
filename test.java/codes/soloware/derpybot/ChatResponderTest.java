@@ -18,7 +18,10 @@ package codes.soloware.derpybot;
 
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDA;
+import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.core.entities.SelfUser;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
@@ -37,13 +40,16 @@ import org.junit.runner.RunWith;
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
 public class ChatResponderTest
 {
-    private static final String testResponseTrigger=" should ";
+    private static final String selfEffectiveName=" should ";
     private static final String responseTriggeringMockMessageContent="The testee should respond to this.";
     private static final String nonResponseTriggeringMockMessageContent="The testee shouldn't respond to this.";
     private static final String mockResponse="This is the response string.";
     private Message mockMessage;
     private MessageAction mockMessageAction;
     private User mockAuthor;
+    private SelfUser mockSelfUser;
+    private Member mockSelfMember;
+    private Guild mockGuild;
     private TextChannel mockChannel;
     private JDA mockJDA;
     private GuildMessageReceivedEvent mockEvent;
@@ -59,17 +65,26 @@ public class ChatResponderTest
 
         mockAuthor=Mockito.mock(User.class);
 
+        mockSelfUser=Mockito.mock(SelfUser.class);
+
+        mockSelfMember=Mockito.mock(Member.class);
+        Mockito.when(mockSelfMember.getEffectiveName()).thenReturn(selfEffectiveName);
+
+        mockGuild=Mockito.mock(Guild.class);
+        Mockito.when(mockGuild.getMember(mockSelfUser)).thenReturn(mockSelfMember);
+
         mockChannel=Mockito.mock(TextChannel.class);
         Mockito.when(mockChannel.canTalk()).thenReturn(true);
         Mockito.when(mockChannel.sendMessage(ArgumentMatchers.anyString())).thenReturn(mockMessageAction);
 
         mockJDA=Mockito.mock(JDA.class);
         Mockito.when(mockJDA.getAccountType()).thenReturn(AccountType.BOT);
-        Mockito.when(mockJDA.getSelfUser()).thenReturn(null);
+        Mockito.when(mockJDA.getSelfUser()).thenReturn(mockSelfUser);
 
         mockEvent=Mockito.mock(GuildMessageReceivedEvent.class);
         Mockito.when(mockEvent.getMessage()).thenReturn(mockMessage);
         Mockito.when(mockEvent.getAuthor()).thenReturn(mockAuthor);
+        Mockito.when(mockEvent.getGuild()).thenReturn(mockGuild);
         Mockito.when(mockEvent.getChannel()).thenReturn(mockChannel);
         Mockito.when(mockEvent.getJDA()).thenReturn(mockJDA);
 
@@ -82,7 +97,7 @@ public class ChatResponderTest
     {
         Mockito.when(mockMessage.getContentDisplay()).thenReturn(nonResponseTriggeringMockMessageContent);
 
-        new ChatResponder(testResponseTrigger, mockGenerator).onEvent(mockEvent);
+        new ChatResponder(mockGenerator).onEvent(mockEvent);
         Mockito.verify(mockGenerator).listen(nonResponseTriggeringMockMessageContent);
     }
 
@@ -91,7 +106,7 @@ public class ChatResponderTest
     {
         Mockito.when(mockMessage.getContentDisplay()).thenReturn(responseTriggeringMockMessageContent);
 
-        new ChatResponder(testResponseTrigger, mockGenerator).onEvent(mockEvent);
+        new ChatResponder(mockGenerator).onEvent(mockEvent);
         Mockito.verify(mockGenerator).respond(responseTriggeringMockMessageContent);
         Mockito.verify(mockChannel).sendMessage(mockResponse);
     }

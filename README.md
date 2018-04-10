@@ -1,7 +1,7 @@
 # Derpy Bot
 
-Derpy is a simple chatbot for Discord. She replies whenever someone says her name in a channel she can access, using
-Markov chains to generate novel responses from old chat logs. When deployed in a channel with a substantial chat
+Derpy is a simple chatbot for Discord. She replies whenever someone says her user name in a channel she can access,
+using Markov chains to generate novel responses from old chat logs. When deployed in a channel with a substantial chat
 history, her responses can get *quite* amusing.
 
 ## Running the Bot
